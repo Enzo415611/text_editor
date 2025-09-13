@@ -1,16 +1,14 @@
 use std::{path::PathBuf, sync::Arc};
-use eframe::{NativeOptions};
+use eframe::{App, NativeOptions};
+use egui::{CentralPanel, FontData, FontDefinitions};
+use egui_code_editor::ColorTheme;
 
 mod app;
 
 
 // ponto de entrada do programa
-fn main() {
-    let d = eframe::icon_data::from_png_bytes(include_bytes!("../assets/OI.ico"))
-    .expect("The icon data must be valid");
-    let mut native_options = NativeOptions::default();
-    native_options.viewport.icon = Some(Arc::new(d));
-
+fn main() {    
+    let native_options = NativeOptions::default();
     _ = eframe::run_native(
         "Text Editor",
         native_options,
@@ -24,9 +22,10 @@ pub struct Editor{
     content: String,
     root: Option<FileNode>,
     current_file: Option<PathBuf>,
-    auto_save_is_active: bool,
+    auto_save_is_active: bool, 
+    syntax_theme: ColorTheme,
+    window_open: bool,
 }
-
 
 impl Editor {
     pub fn new(_cc: &eframe::CreationContext) -> Self {
@@ -34,7 +33,9 @@ impl Editor {
             content: String::new(),
             root: None,
             current_file: None,
-            auto_save_is_active: false,                           
+            auto_save_is_active: false,
+            syntax_theme: ColorTheme::SONOKAI,
+            window_open: false
         }
     }
 }
@@ -45,9 +46,6 @@ pub struct FileNode {
     name: String,
     path: PathBuf,
     is_dir: bool,
-    children: Vec<FileNode>
+    children: Vec<FileNode>    
 }
-
-
-
 

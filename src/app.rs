@@ -2,6 +2,7 @@ use std::{fs::{read_dir, read_to_string, write}, path::{Path, PathBuf}, thread, 
 use eframe::{App, Frame};
 use egui::{CentralPanel, Context, SidePanel, TextBuffer, TopBottomPanel, Ui};
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
+use egui_phosphor::regular;
 use rfd::FileDialog;
 
 use crate::{Editor, FileNode};
@@ -9,8 +10,55 @@ use crate::{Editor, FileNode};
 
 impl App for Editor {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+
+        //nova janela onde vai ter algumas configurções do editor
+        if self.window_open {
+                egui::Window::new("Settings").open(&mut self.window_open)
+                .collapsible(true)
+                .interactable(true).show(ctx, |ui| {
+                    
+                    // menu com os temas para o codigo 
+                    ui.menu_button("Code Themes", |ui| {
+                        if ui.button(ColorTheme::AYU.name).clicked() {
+                            self.syntax_theme = ColorTheme::AYU
+                        }
+                        if ui.button(ColorTheme::AYU_DARK.name).clicked() {
+                            self.syntax_theme = ColorTheme::AYU_DARK
+                        }
+                        if ui.button(ColorTheme::AYU_MIRAGE.name).clicked() {
+                            self.syntax_theme = ColorTheme::AYU_MIRAGE
+                        }
+                        if ui.button(ColorTheme::GITHUB_DARK.name).clicked() {
+                            self.syntax_theme = ColorTheme::GITHUB_DARK
+                        }
+                        if ui.button(ColorTheme::GITHUB_LIGHT.name).clicked() {
+                            self.syntax_theme = ColorTheme::GITHUB_LIGHT
+                        }
+                        if ui.button(ColorTheme::GRUVBOX.name).clicked() {
+                            self.syntax_theme = ColorTheme::GRUVBOX
+                        }
+                        if ui.button(ColorTheme::GRUVBOX_DARK.name).clicked() {
+                            self.syntax_theme = ColorTheme::GRUVBOX_DARK
+                        }
+                        if ui.button(ColorTheme::GRUVBOX_LIGHT.name).clicked() {
+                            self.syntax_theme = ColorTheme::GRUVBOX_LIGHT
+                        }
+                        if ui.button(ColorTheme::SONOKAI.name).clicked() {
+                            self.syntax_theme = ColorTheme::SONOKAI
+                        }                        
+                    });
+                });
+        }
+
+        //uma nova variação de fonte para o egui reconhecer os emojis 
+        let mut fonts = egui::FontDefinitions::default();
+        egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
+        ctx.set_fonts(fonts);
+        
         let clone_auto_save_file = self.auto_save_file().clone(); 
         let clone_detect_current_language = self.detect_current_language().clone();
+
+        // thread
         thread::spawn(move || {
             _ = clone_auto_save_file;
             _ = clone_detect_current_language;
@@ -23,29 +71,33 @@ impl App for Editor {
             ui.horizontal(|ui| {
                 
                 ui.menu_button("File", |ui| {
+                    
                     if ui.button("Open File").clicked() {
                         self.open_explorer_file()
-                }
-
-                
-                if ui.button("Open Folder").clicked() {
-                        self.open_explorer_folder()
-                }
-
-                let auto_save_is_active_str = if self.auto_save_is_active {"ON"} else {"OFF"}; 
-                if ui.button(format!("Auto Save: {:?}", auto_save_is_active_str)).clicked() {
-                        self.auto_save_is_active = !self.auto_save_is_active;
-                }
-
-                if ui.button("Save").clicked() {
-                    if let Some(path) = &self.current_file {
-                        if let Err(e) = write(path, &self.content) {
-                            eprintln!("Error Saving: {:?}",e);
-                        }
                     }
-                }
-                });
+
                 
+                    if ui.button("Open Folder").clicked() {
+                            self.open_explorer_folder()
+                    }
+
+                    let auto_save_is_active_str = if self.auto_save_is_active {"ON"} else {"OFF"}; 
+                    if ui.button(format!("Auto Save: {:?}", auto_save_is_active_str)).clicked() {
+                            self.auto_save_is_active = !self.auto_save_is_active;
+                    }
+
+                    if ui.button("Save").clicked() {
+                        if let Some(path) = &self.current_file {
+                            if let Err(e) = write(path, &self.content) {
+                                eprintln!("Error Saving: {:?}",e);
+                            }
+                        }
+                    }                    
+                });
+
+                if ui.button(regular::GEAR).clicked() {
+                    self.window_open = !self.window_open;
+                }                
             });
 
             ui.add_space(2.0)
@@ -58,7 +110,7 @@ impl App for Editor {
             .max_width(700.0)
             .show(ctx, |ui| {
                 if self.root.is_none() {
-                    ui.label("Select The Folder");
+                    ui.label("Select a Folder or File");
                     return;
                 }
                 let root: FileNode = self.root.as_ref().unwrap().clone();
@@ -73,7 +125,7 @@ impl App for Editor {
                         .id_source("Code Editor")
                         .with_rows(20)
                         .with_fontsize(14.0)
-                        .with_theme(ColorTheme::SONOKAI)
+                        .with_theme(self.syntax_theme)
                         .with_syntax(self.detect_current_language())
                         .with_numlines(true)
                         .show(ui, &mut self.content);            
@@ -180,10 +232,10 @@ impl Editor {
             let type_file = path.extension();
             match type_file {
                 Some(extension) => match extension.to_string_lossy().as_str() {
-                   "rs" => {println!("rs"); Syntax::rust() },
-                   "py" => {println!("py"); Syntax::python() },
-                   "txt" => {println!("txt"); Syntax::new("txt")},
-                    _ => {println!("default"); Syntax::default()}
+                   "rs" => Syntax::rust(),
+                   "py" => Syntax::python(),
+                   "txt" => Syntax::new("text"),
+                    _ => Syntax::default()
                 },
                 _ => Syntax::default()
             }
@@ -191,4 +243,7 @@ impl Editor {
             Syntax::default()
         }     
     }
+
+    
+
 }
