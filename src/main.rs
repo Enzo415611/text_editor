@@ -1,10 +1,8 @@
-use std::{path::PathBuf, sync::Arc};
-use eframe::{App, NativeOptions};
-use egui::{CentralPanel, FontData, FontDefinitions};
+use std::{collections::HashMap, hash::Hash, path::{Path, PathBuf}};
+use eframe::{NativeOptions};
 use egui_code_editor::ColorTheme;
 
 mod app;
-
 
 // ponto de entrada do programa
 fn main() {    
@@ -15,7 +13,6 @@ fn main() {
         Box::new(|cc| Ok(Box::new(Editor::new(cc)))));
 }
 
-
 // struct principal da aplicação
 #[derive()]
 pub struct Editor{
@@ -25,6 +22,20 @@ pub struct Editor{
     auto_save_is_active: bool, 
     syntax_theme: ColorTheme,
     window_open: bool,
+    tabs: HashMap<String, Tabs>,
+}
+
+pub struct Tabs {
+    current_path: PathBuf,    
+    is_open: bool,
+}
+impl Tabs {
+    fn new(current_path: PathBuf, is_open: bool) -> Self {
+        Self {
+            current_path,
+            is_open
+        }
+    }
 }
 
 impl Editor {
@@ -35,7 +46,8 @@ impl Editor {
             current_file: None,
             auto_save_is_active: false,
             syntax_theme: ColorTheme::SONOKAI,
-            window_open: false
+            window_open: false,
+            tabs: HashMap::new()                      
         }
     }
 }

@@ -5,7 +5,7 @@ use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
 use egui_phosphor::regular;
 use rfd::FileDialog;
 
-use crate::{Editor, FileNode};
+use crate::{Editor, FileNode, Tabs};
 
 
 impl App for Editor {
@@ -67,7 +67,6 @@ impl App for Editor {
 
         
         TopBottomPanel::top("top").resizable(false).show(ctx, |ui| {
-
             ui.horizontal(|ui| {
                 
                 ui.menu_button("File", |ui| {
@@ -106,8 +105,8 @@ impl App for Editor {
         SidePanel::left("side")
             .resizable(true)
             .default_width(200.0)
-            .min_width(50.0)
-            .max_width(700.0)
+            .min_width(20.0)
+            .max_width(1000.0)
             .show(ctx, |ui| {
                 if self.root.is_none() {
                     ui.label("Select a Folder or File");
@@ -120,7 +119,27 @@ impl App for Editor {
 
         });
 
+        
+
         CentralPanel::default().show(ctx, |ui| {
+            
+            // file tab
+            ui.horizontal_top(|ui| {                
+                for tabs in self.tabs.iter() {
+                    if ui.button(tabs.0).clicked() {                       
+                        let mut path = tabs.1.current_path.as_path();
+                        if let Ok(text) = read_to_string(path) {
+                            self.content = text;
+                            self.current_file = Some(path.to_path_buf());
+                        }                     
+                    }
+                }
+                if ui.button("X").clicked() {
+                   self.tabs.clear();        
+               }
+            });
+
+            // Painel de Edição
             CodeEditor::default()
                         .id_source("Code Editor")
                         .with_rows(20)
@@ -150,7 +169,9 @@ impl Editor {
                 });
         } else {
             if ui.button(&node.name).clicked() {
-                self.open_file_content(&node.path);
+                self.tabs.insert(node.name.clone(), Tabs::new(node.path.clone(), true));                               
+                let clone_open_file_content = self.open_file_content(&node.path);
+                clone_open_file_content;
             }
         }
     }
@@ -234,7 +255,7 @@ impl Editor {
                 Some(extension) => match extension.to_string_lossy().as_str() {
                    "rs" => Syntax::rust(),
                    "py" => Syntax::python(),
-                   "txt" => Syntax::new("text"),
+                   "txt" => Syntax::new("text"),                   
                     _ => Syntax::default()
                 },
                 _ => Syntax::default()
